@@ -11,7 +11,7 @@ pub fn print_banner() {
     ██████╔╝╚██████╔╝██║  ██║██║
     ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
 
-  [ Buffer-Overflow Automated Framework ]
+  Buffer-Overflow Automated Framework v1.0
 
   Made by: Biswadeb Mukherjee
   Role:    Security Engineer & Researcher

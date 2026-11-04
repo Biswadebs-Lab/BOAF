@@ -3,10 +3,14 @@ name: Release
 # Push a tag like v1.0.0 to trigger this: builds a Linux and a Windows
 # binary and attaches them to a GitHub Release, so end users can just
 # download and run boaf without installing Rust themselves.
+permissions:
+  contents: write
+
 on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -59,4 +63,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: release/*
+          fail_on_unmatched_files: true
           generate_release_notes: true
+          draft: false
+          prerelease: false
