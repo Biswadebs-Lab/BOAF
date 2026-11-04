@@ -1,16 +1,15 @@
 name: Release
 
-# Push a tag like v1.0.0 to trigger this: builds a Linux and a Windows
-# binary and attaches them to a GitHub Release, so end users can just
-# download and run boaf without installing Rust themselves.
+# Automatically build the project on pushes to main and publish a GitHub
+# Release with the generated binaries. This removes the need for manual
+# tag creation while still producing downloadable release assets.
 permissions:
   contents: write
 
 on:
   push:
-    tags:
-      - "v*.*.*"
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   build:
@@ -62,8 +61,11 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: main-${{ github.run_number }}
+          name: BOAF main build ${{ github.run_number }}
           files: release/*
           fail_on_unmatched_files: true
           generate_release_notes: true
+          make_latest: true
           draft: false
           prerelease: false
