@@ -1,51 +1,77 @@
 # BOAF
 ### Buffer Overflow Automated Framework
 
-**BOAF (Buffer Overflow Automated Framework)** is a high-performance network testing and progressive linear fuzzing framework developed in native Rust. It is designed to assess service stability, evaluate input-handling behaviour, and examine target resilience under varying payload conditions.
+[![CI](https://github.com/Biswadebs-Lab/BOAF/actions/workflows/ci.yml/badge.svg)](https://github.com/Biswadebs-Lab/BOAF/actions/workflows/ci.yml)
 
-The framework supports both raw binary TCP communication and structured HTTP interactions, including encrypted SSL/TLS connections. It provides configurable testing modes, dynamic request simulation, and flexible protocol handling to facilitate controlled security assessments and authorised robustness testing.
+BOAF is a high-performance network fuzzing and buffer-overflow testing framework written in native Rust. It assesses service stability, input-handling behaviour, and target resilience under varying payload conditions, over raw TCP or structured HTTP, with optional TLS.
 
-## Core Features
+## Features
 
-- **Smart Target Resolver:** Automatically normalises target addresses, handles protocol identification, and applies dynamic port selection with support for HTTP (80) and HTTPS (443) configurations.
+- **Target resolver** — normalises host/URL input and selects the right port (80/443) automatically.
+- **Raw & HTTP modes** — direct binary TCP streaming, or structured HTTP requests with a rotating User-Agent.
+- **TLS support** — including a sandbox mode for self-signed certificates.
+- **Progressive fuzzing** — sweeps payload sizes across a concurrent worker pool to locate instability boundaries.
+- **Down-detection** — confirms a target is actually unresponsive (via reconnect retries) before reporting a crash, rather than treating a single dropped connection as proof.
+- **Static injector** — a single-shot buffer-overflow payload profile (offset + return address + NOP sled + shellcode) for targeted testing.
 
-- **TLS Sandbox Support:** Provides configurable TLS certificate verification handling, including support for testing environments that use self-signed certificates.
+## Installation
 
-- **Dynamic Header Simulation:** Incorporates a request randomisation engine capable of cycling through different client fingerprint and User-Agent configurations during testing.
+Grab the latest binary from [Releases](https://github.com/Biswadebs-Lab/BOAF/releases) (starting from `v1.0.0`), or fetch it directly:
 
-- **Multi-Encapsulation Engine:** Supports two distinct communication modes:
-  - **Raw Binary Mode:** Enables direct binary payload transmission over TCP connections.
-  - **Structured HTTP Mode:** Facilitates testing through standard HTTP request and header structures.
+```bash
+# Linux
+wget -O boaf https://github.com/Biswadebs-Lab/BOAF/releases/latest/download/boaf-linux-x86_64
+chmod +x boaf
+```
 
-- **Progressive Linear Fuzzing:** Implements a progressive input-testing approach to evaluate service behaviour and identify potential stability issues across varying payload sizes and configurations.
+```cmd
+:: Windows (cmd.exe)
+curl.exe -L -o boaf.exe https://github.com/Biswadebs-Lab/BOAF/releases/latest/download/boaf-windows-x86_64.exe
+```
 
-- **Native Rust Implementation:** Leverages Rust's performance, memory safety guarantees, and concurrency capabilities to provide an efficient testing environment.
+## Usage
 
-## Intended Use Cases
+```bash
+boaf --target <host> [OPTIONS]
+```
 
-BOAF is designed to support:
+| Flag | Default | Description |
+|---|---|---|
+| `-t, --target <TARGET>` | — | Target host/URL (required) |
+| `-m, --mode <raw\|http>` | `raw` | Wire encapsulation |
+| `-f, --fuzz` | off | Run progressive fuzzing instead of the static injector |
+| `--start-size <N>` | `100` | Starting payload size (fuzz mode) |
+| `--max-size <N>` | `5000` | Maximum payload size (fuzz mode) |
+| `--step <N>` | `100` | Size increment per iteration (fuzz mode) |
+| `-w, --workers <N>` | `4` | Concurrent worker threads (fuzz mode) |
+| `--down-check-attempts <N>` | `3` | Reconnect attempts before confirming the target is down |
+| `--down-check-delay-ms <MS>` | `500` | Delay between down-check attempts |
+| `--allow-self-signed` | `true` | Accept self-signed/invalid TLS certificates |
+| `-h, --help` | — | Print help |
 
-- Authorised network and service robustness assessments.
-- Buffer overflow research and input-validation testing.
-- Controlled fuzzing experiments.
-- CTF and cybersecurity laboratory environments.
-- Protocol handling and service stability evaluation.
-- Security research and defensive verification.
+```bash
+# Progressive fuzzing against an HTTP target with 8 workers
+boaf --target https://192.168.1.50 --mode http --fuzz --workers 8
 
-## Developer & Author
+# Single-shot static injector over raw TCP
+boaf --target 192.168.1.50:9000
+```
 
-**Biswadeb Mukherjee**  
-Security Engineer & Researcher
+## Intended Use
 
-- **Website:** https://official-biswadeb941.in
-- **Project:** BOAF (Buffer Overflow Automated Framework)
+Authorised robustness assessments, buffer-overflow research, controlled fuzzing, CTF/lab environments, and protocol stability evaluation.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Author
+
+**Biswadeb Mukherjee** — Security Engineer & Researcher
+[official-biswadeb941.in](https://official-biswadeb941.in)
 
 ## Disclaimer
 
-BOAF is developed exclusively for authorised security research, educational purposes, controlled laboratory experiments, and defensive security assessments.
+BOAF is built exclusively for authorised security research, education, and controlled testing. You are responsible for obtaining explicit permission before testing any system or network. Unauthorised use is strictly prohibited; the developer assumes no liability for misuse.
 
-Users are responsible for ensuring that they have explicit permission to test any system or network using this framework. Unauthorised access, disruption, exploitation, or testing of third-party infrastructure is strictly prohibited.
-
-The developer assumes no responsibility for misuse, unauthorised activities, or damages resulting from the use of this software.
-
-**Use responsibly. Test ethically. Research continuously.**
+**Use responsibly. Test ethically.**

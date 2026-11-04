@@ -1,9 +1,12 @@
 [package]
 name = "boaf"
 version = "1.0.0"
-edition = "2026"
+edition = "2021"
 
 [dependencies]
 native-tls = "0.2"
 clap = { version = "4.4", features = ["derive"] }
+
+[profile.release]
+strip = true
 
