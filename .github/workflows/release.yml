@@ -2,16 +2,17 @@ name: Release
 
 # Publish a versioned GitHub Release whenever a semantic-version tag is pushed.
 # This keeps builds out of the way until a real release is intentionally cut.
-permissions:
-  contents: write
-
-on:
+"on":
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   build:
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
@@ -37,16 +38,20 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          asset_name="${{ matrix.asset_name }}-${{ github.ref_name }}"
-          cp "target/${{ matrix.target }}/release/${{ matrix.artifact }}" "dist/${{ asset_name }}"
+          cp "target/${{ matrix.target }}/release/${{ matrix.artifact }}" "dist/${{ matrix.asset_name }}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset_name }}-${{ github.ref_name }}
-          path: dist/${{ matrix.asset_name }}-${{ github.ref_name }}
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.asset_name }}
+          if-no-files-found: error
 
   release:
     needs: build
+    if: github.ref_type == 'tag'
+    permissions:
+      actions: read
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -59,7 +64,7 @@ jobs:
           find dist -type f -exec cp {} release/ \;
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: BOAF ${{ github.ref_name }}

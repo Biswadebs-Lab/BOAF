@@ -16,7 +16,7 @@ BOAF is a high-performance network fuzzing and buffer-overflow testing framework
 
 ## Installation
 
-Grab the latest binary from [Releases](https://github.com/Biswadebs-Lab/BOAF/releases). Release assets are built automatically from successful `main` branch runs, or fetch it directly:
+Grab the latest binary from [Releases](https://github.com/Biswadebs-Lab/BOAF/releases). Release assets are built automatically when a semantic-version tag such as `v1.0.2` is pushed, or fetch the latest release directly:
 
 ```bash
 # Linux
