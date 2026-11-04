@@ -1,77 +1,243 @@
 # BOAF
 ### Buffer Overflow Automated Framework
 
+**A Rust-powered framework for network fuzzing and automated buffer-overflow testing.**
+
 [![CI](https://github.com/Biswadebs-Lab/BOAF/actions/workflows/ci.yml/badge.svg)](https://github.com/Biswadebs-Lab/BOAF/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/Biswadebs-Lab/BOAF)](https://github.com/Biswadebs-Lab/BOAF/releases)
+[![License](https://img.shields.io/github/license/Biswadebs-Lab/BOAF)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Biswadebs-Lab/BOAF?style=flat)](https://github.com/Biswadebs-Lab/BOAF/stargazers)
 
-BOAF is a high-performance network fuzzing and buffer-overflow testing framework written in native Rust. It assesses service stability, input-handling behaviour, and target resilience under varying payload conditions, over raw TCP or structured HTTP, with optional TLS.
+---
 
-## Features
+## Overview
 
-- **Target resolver** — normalises host/URL input and selects the right port (80/443) automatically.
-- **Raw & HTTP modes** — direct binary TCP streaming, or structured HTTP requests with a rotating User-Agent.
-- **TLS support** — including a sandbox mode for self-signed certificates.
-- **Progressive fuzzing** — sweeps payload sizes across a concurrent worker pool to locate instability boundaries.
-- **Down-detection** — confirms a target is actually unresponsive (via reconnect retries) before reporting a crash, rather than treating a single dropped connection as proof.
-- **Static injector** — a single-shot buffer-overflow payload profile (offset + return address + NOP sled + shellcode) for targeted testing.
+BOAF is a native Rust framework designed for network fuzzing, buffer-overflow testing, and service stability assessment.
+
+It provides a unified command-line interface for testing how network services handle varying input sizes and payload conditions. By combining raw TCP communication, structured HTTP requests, progressive fuzzing, and target availability verification, BOAF offers researchers a configurable environment for controlled robustness assessments.
+
+The framework is designed around two execution strategies:
+
+- **Raw mode:** Direct binary-streaming communication over TCP.
+- **HTTP mode:** Structured HTTP POST requests for application-layer testing.
+
+BOAF also provides configurable concurrency, TLS handling, and a static payload injection workflow.
+
+**Built for security researchers, penetration testers, and developers working on application and network robustness.**
+
+## Core Capabilities
+
+### Network Testing
+
+- **Target Resolution:** Normalises hostnames, IP addresses, and URL inputs, with automatic port selection where applicable.
+- **Raw TCP Communication:** Supports direct binary-streaming operations against TCP services.
+- **Structured HTTP Testing:** Sends HTTP POST requests with configurable target parameters and rotating User-Agent values.
+- **TLS Support:** Supports encrypted connections, with an optional setting for accepting self-signed or otherwise invalid certificates in controlled environments.
+
+### Fuzzing Engine
+
+- **Progressive Payload Testing:** Increases payload sizes across configurable testing intervals.
+- **Concurrent Execution:** Uses a configurable worker pool to execute fuzzing operations.
+- **Crash Boundary Assessment:** Uses configurable reconnection attempts and delays to verify target availability after failed sends.
+- **Configurable Test Parameters:** Controls starting payload size, maximum payload size, increment size, and worker count.
+
+### Static Payload Injection
+
+BOAF includes a single-shot static injection profile for targeted buffer-overflow research.
+
+The profile supports configurable payload construction parameters, including:
+
+- Buffer offset
+- Return address
+- NOP sled
+- Shellcode
+
+This functionality is intended exclusively for controlled, authorised testing environments.
+
+## Architecture and Execution
+
+BOAF exposes two primary execution modes and two testing workflows.
+
+| Component | Purpose |
+|---|---|
+| Raw mode | Direct TCP binary streaming |
+| HTTP mode | Structured HTTP POST communication |
+| Progressive fuzzing | Incremental payload-size testing |
+| Static injection | Single-shot payload injection |
+| Worker pool | Concurrent fuzzing execution |
+| Down-check mechanism | Target availability verification |
+| TLS handling | Encrypted connection support |
+
+The execution strategy and testing parameters can be configured through command-line arguments.
 
 ## Installation
 
-Grab the latest binary from [Releases](https://github.com/Biswadebs-Lab/BOAF/releases). Release assets are built automatically when a semantic-version tag such as `v1.0.2` is pushed, or fetch the latest release directly:
+### Download a Prebuilt Release
+
+Precompiled binaries are available through GitHub Releases.
+
+**[View BOAF Releases](https://github.com/Biswadebs-Lab/BOAF/releases)**
+
+#### Linux (x86_64)
 
 ```bash
-# Linux
 wget -O boaf https://github.com/Biswadebs-Lab/BOAF/releases/latest/download/boaf-linux-x86_64
+
 chmod +x boaf
+
+./boaf --version
 ```
+
+#### Windows (x86_64)
 
 ```cmd
-:: Windows (cmd.exe)
 curl.exe -L -o boaf.exe https://github.com/Biswadebs-Lab/BOAF/releases/latest/download/boaf-windows-x86_64.exe
+
+boaf.exe --version
 ```
 
-## Usage
+### Build from Source
+
+BOAF is written in Rust and uses Cargo for dependency management and compilation.
+
+**Prerequisites:**
+- Rust toolchain
+- Cargo
+
+Clone the repository:
 
 ```bash
-boaf --target <host> [OPTIONS]
+git clone https://github.com/Biswadebs-Lab/BOAF.git
+
+cd BOAF
 ```
 
-| Flag | Default | Description |
-|---|---|---|
-| `-t, --target <TARGET>` | — | Target host/URL (required) |
-| `-m, --mode <raw\|http>` | `raw` | Wire encapsulation |
-| `-f, --fuzz` | off | Run progressive fuzzing instead of the static injector |
-| `--start-size <N>` | `100` | Starting payload size (fuzz mode) |
-| `--max-size <N>` | `5000` | Maximum payload size (fuzz mode) |
-| `--step <N>` | `100` | Size increment per iteration (fuzz mode) |
-| `-w, --workers <N>` | `4` | Concurrent worker threads (fuzz mode) |
-| `--down-check-attempts <N>` | `3` | Reconnect attempts before confirming the target is down |
-| `--down-check-delay-ms <MS>` | `500` | Delay between down-check attempts |
-| `--allow-self-signed` | `true` | Accept self-signed/invalid TLS certificates |
-| `-h, --help` | — | Print help |
+Build the release binary:
 
 ```bash
-# Progressive fuzzing against an HTTP target with 8 workers
-boaf --target https://192.168.1.50 --mode http --fuzz --workers 8
+cargo build --release
+```
 
-# Single-shot static injector over raw TCP
+Run BOAF:
+
+```bash
+./target/release/boaf --help
+```
+
+## Quick Start
+
+All examples below assume a controlled testing environment where you have explicit authorisation.
+
+### 1. Inspect Available Options
+
+```bash
+boaf --help
+```
+
+### 2. Progressive Fuzzing
+
+Run progressive fuzzing against an HTTP service:
+
+```bash
+boaf \
+  --target http://192.168.1.50 \
+  --mode http \
+  --fuzz \
+  --workers 8
+```
+
+### 3. Raw TCP Testing
+
+Run the default raw execution workflow against a laboratory TCP service:
+
+```bash
 boaf --target 192.168.1.50:9000
 ```
 
+### 4. TLS Testing
+
+For a controlled environment using a self-signed certificate:
+
+```bash
+boaf \
+  --target https://192.168.1.50 \
+  --mode http \
+  --allow-self-signed
+```
+
+**Note:** Accepting invalid certificates disables normal certificate validation for the relevant connection. Use this option only in controlled testing environments.
+
+## Command-Line Reference
+
+| Option | Default | Description |
+|---|---|---|
+| `-t, --target` | Required | Target hostname, IP address, or URL |
+| `-m, --mode` | `raw` | Execution mode: `raw` or `http` |
+| `-f, --fuzz` | Disabled | Enable progressive fuzzing |
+| `--start-size` | `100` | Initial payload size |
+| `--max-size` | `5000` | Maximum payload size |
+| `--step` | `100` | Payload-size increment |
+| `-w, --workers` | `4` | Concurrent worker threads |
+| `--down-check-attempts` | `3` | Target availability verification attempts |
+| `--down-check-delay-ms` | `500` | Delay between availability checks |
+| `--allow-self-signed` | Disabled | Accept invalid or self-signed TLS certificates |
+| `-h, --help` | — | Display help information |
+| `-V, --version` | — | Display version information |
+
+Payload-size and worker settings apply to progressive fuzzing. Other execution details depend on the selected mode and implementation.
+
+
+The release workflow builds the configured platform binaries and publishes the release assets.
+
+Refer to the [Releases](https://github.com/Biswadebs-Lab/BOAF/releases) page for available versions and downloads.
+
 ## Intended Use
 
-Authorised robustness assessments, buffer-overflow research, controlled fuzzing, CTF/lab environments, and protocol stability evaluation.
+BOAF is intended for:
+
+- Authorised security assessments.
+- Network service robustness testing.
+- Buffer-overflow research.
+- Controlled fuzzing experiments.
+- CTF and isolated laboratory environments.
+- Protocol input-handling evaluation.
+
+## Security and Responsible Use
+
+BOAF is a security research and testing framework.
+
+Only use it against systems and networks for which you have explicit authorisation. Unauthorised testing may disrupt services, affect availability, or cause unintended damage.
+
+Researchers should use isolated laboratory environments whenever possible, particularly when evaluating static payload injection functionality.
+
+The developer does not authorise unlawful use of this software and assumes no responsibility for misuse.
+
+## Contributing
+
+Contributions, technical reviews, bug reports, and feature suggestions are welcome.
+
+Before submitting a contribution:
+
+1. Review the existing implementation.
+2. Test changes in an authorised laboratory environment.
+3. Include reproducible steps for reported bugs.
+4. Provide clear descriptions of proposed changes.
+
+Use the repository's GitHub Issues and Pull Requests to participate.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+BOAF is distributed under the [MIT License](LICENSE).
 
 ## Author
 
-**Biswadeb Mukherjee** — Security Engineer & Researcher
-[official-biswadeb941.in](https://official-biswadeb941.in)
+**Biswadeb Mukherjee**  
+Security Engineer & Researcher
 
-## Disclaimer
+Website: [official-biswadeb941.in](https://official-biswadeb941.in)
 
-BOAF is built exclusively for authorised security research, education, and controlled testing. You are responsible for obtaining explicit permission before testing any system or network. Unauthorised use is strictly prohibited; the developer assumes no liability for misuse.
+GitHub: [@Biswadebs-Lab](https://github.com/Biswadebs-Lab)
 
-**Use responsibly. Test ethically.**
+---
+
+**BOAF — Built for security research. Engineered in Rust.**
