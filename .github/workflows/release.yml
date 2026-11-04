@@ -1,15 +1,14 @@
 name: Release
 
-# Automatically build the project on pushes to main and publish a GitHub
-# Release with the generated binaries. This removes the need for manual
-# tag creation while still producing downloadable release assets.
+# Publish a versioned GitHub Release whenever a semantic-version tag is pushed.
+# This keeps builds out of the way until a real release is intentionally cut.
 permissions:
   contents: write
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*.*.*"
 
 jobs:
   build:
@@ -38,12 +37,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          cp "target/${{ matrix.target }}/release/${{ matrix.artifact }}" "dist/${{ matrix.asset_name }}"
+          asset_name="${{ matrix.asset_name }}-${{ github.ref_name }}"
+          cp "target/${{ matrix.target }}/release/${{ matrix.artifact }}" "dist/${{ asset_name }}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset_name }}
-          path: dist/${{ matrix.asset_name }}
+          name: ${{ matrix.asset_name }}-${{ github.ref_name }}
+          path: dist/${{ matrix.asset_name }}-${{ github.ref_name }}
 
   release:
     needs: build
@@ -61,8 +61,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: main-${{ github.run_number }}
-          name: BOAF main build ${{ github.run_number }}
+          tag_name: ${{ github.ref_name }}
+          name: BOAF ${{ github.ref_name }}
           files: release/*
           fail_on_unmatched_files: true
           generate_release_notes: true
